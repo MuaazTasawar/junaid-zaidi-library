@@ -2,22 +2,16 @@ import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
-
-enum DueStatus { overdue, dueSoon, safe }
+import '../../core/utils/date_formatter.dart';
 
 /// The signature "library stamp" widget: a rotated (-4deg), bordered,
 /// rounded-rectangle badge showing the due date in JetBrains Mono
-/// (e.g. "DUE JUL 14"), colored by how close/overdue the date is:
+/// (e.g. "DUE JUL 14"), colored by how close/overdue the date is.
+/// Animates in with a settle/bounce on first render.
 ///
-///   overdue (dueDate < today)      → stamp (red) border + text
-///   due soon (dueDate <= today+3)  → gold border + text
-///   safe                            → ink border + text
-///
-/// Animates in with a settle/bounce on first render via an
-/// [AnimationController] driving scale + rotation.
-///
-/// Status resolution lives locally here for now; Phase 6 will route
-/// it through `core/utils/date_formatter.dart` instead.
+/// Status + date formatting now delegate to [DateFormatter] — the
+/// local logic this widget carried in Phase 2 has been removed
+/// (Phase 6).
 class DueDateStamp extends StatefulWidget {
   const DueDateStamp({
     super.key,
@@ -65,30 +59,10 @@ class _DueDateStampState extends State<DueDateStamp>
     super.dispose();
   }
 
-  DueStatus _resolveStatus() {
-    final DateTime today = DateTime.now();
-    final DateTime todayDate = DateTime(today.year, today.month, today.day);
-    final DateTime due =
-    DateTime(widget.dueDate.year, widget.dueDate.month, widget.dueDate.day);
-
-    if (due.isBefore(todayDate)) return DueStatus.overdue;
-    final DateTime soonThreshold = todayDate.add(const Duration(days: 3));
-    if (!due.isAfter(soonThreshold)) return DueStatus.dueSoon;
-    return DueStatus.safe;
-  }
-
-  String _formatDate(DateTime date) {
-    const months = [
-      'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-      'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
-    ];
-    return '${months[date.month - 1]} ${date.day}';
-  }
-
   @override
   Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<AppColorExtension>()!;
-    final DueStatus status = _resolveStatus();
+    final DueStatus status = DateFormatter.resolveDueStatus(widget.dueDate);
 
     final Color color = switch (status) {
       DueStatus.overdue => ext.stamp,
@@ -114,7 +88,7 @@ class _DueDateStampState extends State<DueDateStamp>
           borderRadius: BorderRadius.circular(6),
         ),
         child: Text(
-          '${widget.label} ${_formatDate(widget.dueDate)}',
+          '${widget.label} ${DateFormatter.monoDate(widget.dueDate)}',
           style: AppTypography.mono(
             fontSize: 11,
             fontWeight: FontWeight.w600,

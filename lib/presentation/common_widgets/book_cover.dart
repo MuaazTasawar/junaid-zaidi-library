@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_typography.dart';
+import '../../core/utils/cover_color_resolver.dart';
 
 /// Renders a book as a typographic mini-cover — NEVER a plain colored
 /// block (Golden Rule #7).
@@ -9,10 +10,9 @@ import '../../core/theme/app_typography.dart';
 /// the right containing the title (Lora) and author (Inter,
 /// small-caps via letter-spacing + uppercase, 70% opacity white).
 ///
-/// Color is resolved from [subject]. This widget owns a local
-/// subject→color map for now; Phase 6 will swap this out for
-/// `core/utils/cover_color_resolver.dart` so the mapping lives in one
-/// canonical place shared with any future non-widget consumers.
+/// Color is resolved via [CoverColorResolver] — the local subject
+/// map this widget carried in Phase 2 has been removed in favor of
+/// that single canonical source (Phase 6).
 class BookCover extends StatelessWidget {
   const BookCover({
     super.key,
@@ -29,23 +29,9 @@ class BookCover extends StatelessWidget {
   final double width;
   final double height;
 
-  static const Map<String, _CoverColors> _subjectColors = {
-    'Computer Science': _CoverColors(Color(0xFF2F5233), Color(0xFF1F3A23)),
-    'Mathematics': _CoverColors(Color(0xFF2C4A66), Color(0xFF1C324A)),
-    'Literature': _CoverColors(Color(0xFF6B4226), Color(0xFF4A2D19)),
-    'Physics': _CoverColors(Color(0xFF4A3B6B), Color(0xFF332A4F)),
-    'Engineering': _CoverColors(Color(0xFF2F5233), Color(0xFF1F3A23)),
-    'Business': _CoverColors(Color(0xFF5C4A2A), Color(0xFF3D3019)),
-  };
-
-  static const _CoverColors _defaultColors =
-  _CoverColors(Color(0xFF3D4A56), Color(0xFF2A333D));
-
-  _CoverColors get _colors => _subjectColors[subject] ?? _defaultColors;
-
   @override
   Widget build(BuildContext context) {
-    final _CoverColors colors = _colors;
+    final CoverColors colors = CoverColorResolver.resolve(subject);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(6),
@@ -101,10 +87,4 @@ class BookCover extends StatelessWidget {
       ),
     );
   }
-}
-
-class _CoverColors {
-  const _CoverColors(this.body, this.spine);
-  final Color body;
-  final Color spine;
 }
