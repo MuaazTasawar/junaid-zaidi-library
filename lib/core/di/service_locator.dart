@@ -3,6 +3,7 @@ import 'package:get_it/get_it.dart';
 import '../../data/repositories/library_repository.dart';
 import '../../data/repositories/mock_library_repository.dart';
 import '../../presentation/auth/auth_cubit.dart';
+import '../../presentation/catalog/catalog_cubit.dart';
 import '../../presentation/home/home_cubit.dart';
 import '../../presentation/theme/app_theme_cubit.dart';
 
@@ -24,15 +25,20 @@ Future<void> setupServiceLocator() async {
     );
   }
 
-  // ── App-wide Cubits (singletons — live for the whole app session) ──
+  // ── App-wide singletons (live for the whole app session) ──
   sl.registerLazySingleton<AppThemeCubit>(() => AppThemeCubit());
   sl.registerLazySingleton<AuthCubit>(() => AuthCubit(sl<LibraryRepository>()));
+
+  // CatalogCubit is a singleton (not a factory) — see Phase 9
+  // architecture note: it's shared across Search, Results, Detail,
+  // Subject Browse, and Scanner so state survives push navigation
+  // between those screens.
+  sl.registerLazySingleton<CatalogCubit>(() => CatalogCubit(sl<LibraryRepository>()));
 
   // ── Feature Cubits (factories — new instance per screen visit) ──
   sl.registerFactory<HomeCubit>(() => HomeCubit(sl<LibraryRepository>()));
 
-  // CatalogCubit (9), AccountCubit (10), NotificationsCubit (11),
-  // ProfileCubit (12), OfflineCubit (13), StaffCubit (14) are
-  // registered here as each is built in its phase. This file is
-  // reissued in full each time.
+  // AccountCubit (10), NotificationsCubit (11), ProfileCubit (12),
+  // OfflineCubit (13), StaffCubit (14) are registered here as each is
+  // built in its phase. This file is reissued in full each time.
 }

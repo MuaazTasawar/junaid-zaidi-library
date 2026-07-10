@@ -4,14 +4,20 @@ import 'package:go_router/go_router.dart';
 import '../../presentation/auth/forgot_password_screen.dart';
 import '../../presentation/auth/login_screen.dart';
 import '../../presentation/auth/splash_screen.dart';
+import '../../presentation/catalog/book_detail_screen.dart';
+import '../../presentation/catalog/scanner_screen.dart';
+import '../../presentation/catalog/search_results_screen.dart';
+import '../../presentation/catalog/search_screen.dart';
+import '../../presentation/catalog/subject_browse_screen.dart';
 import '../../presentation/home/home_screen.dart';
 import 'app_routes.dart';
 
 /// App-wide [GoRouter] configuration.
 ///
-/// - Auth routes (Phase 7) and Home (Phase 8) now point at their real
-///   screens. Everything else remains a placeholder until its own
-///   phase lands.
+/// - Auth (Phase 7), Home (Phase 8), and the full Catalog flow
+///   (Phase 9) now point at their real screens. Account,
+///   Notifications, Profile, and Staff remain placeholders until
+///   their own phases land.
 /// - Patron tabs (Home · Search · Account · Notifications · Profile)
 ///   live under a [StatefulShellRoute] with a custom
 ///   [navigatorContainerBuilder] so tab switches use [FadeTransition].
@@ -52,35 +58,32 @@ class AppRouter {
           StatefulShellBranch(routes: [
             GoRoute(
               path: AppRoutes.search,
-              builder: (context, state) =>
-              const _PlaceholderScreen(title: 'Search', phase: 9),
+              builder: (context, state) => const SearchScreen(),
               routes: [
                 GoRoute(
                   path: 'results',
-                  builder: (context, state) =>
-                  const _PlaceholderScreen(title: 'Search Results', phase: 9),
+                  builder: (context, state) => SearchResultsScreen(
+                    initialQuery: state.uri.queryParameters['q'] ?? '',
+                  ),
                 ),
                 GoRoute(
                   path: 'scanner',
-                  builder: (context, state) =>
-                  const _PlaceholderScreen(title: 'Scanner', phase: 9),
+                  builder: (context, state) => const ScannerScreen(),
                 ),
               ],
             ),
             GoRoute(
               path: '${AppRoutes.bookDetail}/:biblioId',
               pageBuilder: (context, state) => _slideUpPage(
-                child: _PlaceholderScreen(
-                  title: 'Book Detail #${state.pathParameters['biblioId']}',
-                  phase: 9,
+                child: BookDetailScreen(
+                  biblioId: int.parse(state.pathParameters['biblioId']!),
                 ),
               ),
             ),
             GoRoute(
               path: '${AppRoutes.subjectBrowse}/:subject',
-              builder: (context, state) => _PlaceholderScreen(
-                title: 'Browse: ${state.pathParameters['subject']}',
-                phase: 9,
+              builder: (context, state) => SubjectBrowseScreen(
+                subject: Uri.decodeComponent(state.pathParameters['subject']!),
               ),
             ),
           ]),
