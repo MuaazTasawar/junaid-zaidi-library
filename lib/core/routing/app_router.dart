@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../presentation/account/account_home_screen.dart';
+import '../../presentation/account/checkouts_screen.dart';
+import '../../presentation/account/fines_screen.dart';
+import '../../presentation/account/history_screen.dart';
+import '../../presentation/account/holds_screen.dart';
+import '../../presentation/account/library_card_screen.dart';
 import '../../presentation/auth/forgot_password_screen.dart';
 import '../../presentation/auth/login_screen.dart';
 import '../../presentation/auth/splash_screen.dart';
@@ -14,10 +20,9 @@ import 'app_routes.dart';
 
 /// App-wide [GoRouter] configuration.
 ///
-/// - Auth (Phase 7), Home (Phase 8), and the full Catalog flow
-///   (Phase 9) now point at their real screens. Account,
-///   Notifications, Profile, and Staff remain placeholders until
-///   their own phases land.
+/// - Auth (7), Home (8), Catalog (9), and Account (10) now point at
+///   their real screens. Notifications, Profile, and Staff remain
+///   placeholders until their own phases land.
 /// - Patron tabs (Home · Search · Account · Notifications · Profile)
 ///   live under a [StatefulShellRoute] with a custom
 ///   [navigatorContainerBuilder] so tab switches use [FadeTransition].
@@ -90,33 +95,27 @@ class AppRouter {
           StatefulShellBranch(routes: [
             GoRoute(
               path: AppRoutes.account,
-              builder: (context, state) =>
-              const _PlaceholderScreen(title: 'Account', phase: 10),
+              builder: (context, state) => const AccountHomeScreen(),
               routes: [
                 GoRoute(
                   path: 'checkouts',
-                  builder: (context, state) =>
-                  const _PlaceholderScreen(title: 'Checkouts', phase: 10),
+                  builder: (context, state) => const CheckoutsScreen(),
                 ),
                 GoRoute(
                   path: 'holds',
-                  builder: (context, state) =>
-                  const _PlaceholderScreen(title: 'Holds', phase: 10),
+                  builder: (context, state) => const HoldsScreen(),
                 ),
                 GoRoute(
                   path: 'fines',
-                  builder: (context, state) =>
-                  const _PlaceholderScreen(title: 'Fines', phase: 10),
+                  builder: (context, state) => const FinesScreen(),
                 ),
                 GoRoute(
                   path: 'history',
-                  builder: (context, state) =>
-                  const _PlaceholderScreen(title: 'Borrowing History', phase: 10),
+                  builder: (context, state) => const HistoryScreen(),
                 ),
                 GoRoute(
                   path: 'library-card',
-                  builder: (context, state) =>
-                  const _PlaceholderScreen(title: 'Library Card', phase: 10),
+                  builder: (context, state) => const LibraryCardScreen(),
                 ),
               ],
             ),
