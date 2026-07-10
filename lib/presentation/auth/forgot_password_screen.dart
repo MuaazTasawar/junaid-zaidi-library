@@ -1,45 +1,47 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
 
-import '../../core/routing/app_routes.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_typography.dart';
 import '../../core/utils/validators.dart';
 import '../common_widgets/app_button.dart';
 import '../common_widgets/app_text_field.dart';
-import 'auth_cubit.dart';
-import 'auth_state.dart';
 
-/// Screen 2: library card number + password login, routing to
-/// patron home or staff home based on the returned patron's
-/// `categorycode` (handled centrally in [AuthCubit]/[SplashScreen]
-/// redirect logic, mirrored here for the direct post-submit case).
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+/// Screen 3: card-number-only password reset request. No repository
+/// method exists for this yet (out of scope of the Koha endpoint
+/// mapping provided), so submission simulates a request and shows a
+/// confirmation state — matches the spec's "Success state:
+/// confirmation message" requirement without inventing an API call
+/// that isn't in the contract.
+class ForgotPasswordScreen extends StatefulWidget {
+  const ForgotPasswordScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _cardController = TextEditingController();
-  final _passwordController = TextEditingController();
+  bool _isSubmitting = false;
+  bool _submitted = false;
 
   @override
   void dispose() {
     _cardController.dispose();
-    _passwordController.dispose();
     super.dispose();
   }
 
-  void _submit(BuildContext context) {
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    context.read<AuthCubit>().login(
-      cardnumber: _cardController.text.trim(),
-      password: _passwordController.text,
-    );
+
+    setState(() => _isSubmitting = true);
+    await Future.delayed(const Duration(milliseconds: 600));
+    if (!mounted) return;
+
+    setState(() {
+      _isSubmitting = false;
+      _submitted = true;
+    });
   }
 
   @override
@@ -47,109 +49,88 @@ class _LoginScreenState extends State<LoginScreen> {
     final ext = Theme.of(context).extension<AppColorExtension>()!;
 
     return Scaffold(
-      body: BlocConsumer<AuthCubit, AuthState>(
-        listener: (context, state) {
-          if (state.status == AuthStatus.authenticatedPatron) {
-            context.go(AppRoutes.home);
-          } else if (state.status == AuthStatus.authenticatedStaff) {
-            context.go(AppRoutes.staffHome);
-          } else if (state.errorMessage != null) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.errorMessage!)),
-            );
-          }
-        },
-        builder: (context, state) {
-          return SafeArea(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: 24),
-                    Center(
-                      child: Container(
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          color: ext.primary,
-                          borderRadius: BorderRadius.circular(18),
-                        ),
-                        child: const Icon(
-                          Icons.menu_book_rounded,
-                          color: Colors.white,
-                          size: 32,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-                    Text(
-                      'Welcome back',
-                      textAlign: TextAlign.center,
-                      style: AppTypography.lora(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w600,
-                        color: ext.inkText,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Sign in with your library card to continue',
-                      textAlign: TextAlign.center,
-                      style: AppTypography.inter(fontSize: 13, color: ext.slate),
-                    ),
-                    const SizedBox(height: 32),
-                    AppTextField(
-                      controller: _cardController,
-                      label: 'Library card number',
-                      hintText: 'e.g. FA23-BCS-050',
-                      prefixIcon: Icons.badge_outlined,
-                      validator: Validators.cardNumber,
-                    ),
-                    const SizedBox(height: 16),
-                    AppTextField(
-                      controller: _passwordController,
-                      label: 'Password',
-                      obscureText: true,
-                      showObscureToggle: true,
-                      prefixIcon: Icons.lock_outline_rounded,
-                      validator: Validators.password,
-                    ),
-                    const SizedBox(height: 24),
-                    AppButton(
-                      label: 'Sign In',
-                      isLoading: state.isSubmitting,
-                      onPressed: () => _submit(context),
-                    ),
-                    const SizedBox(height: 16),
-                    Center(
-                      child: AppButton(
-                        label: 'Forgot password?',
-                        variant: AppButtonVariant.text,
-                        fullWidth: false,
-                        onPressed: () => context.push(AppRoutes.forgotPassword),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Center(
-                      child: AppButton(
-                        label: 'Sign in as staff member',
-                        variant: AppButtonVariant.text,
-                        fullWidth: false,
-                        onPressed: () {
-                          _cardController.text = 'STAFF-0001';
-                        },
-                      ),
-                    ),
-                  ],
+      appBar: AppBar(
+        leading: const BackButton(),
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Reset password',
+                style: AppTypography.lora(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                  color: ext.inkText,
                 ),
               ),
-            ),
-          );
-        },
+              const SizedBox(height: 8),
+              Text(
+                "Enter your library card number and we'll send a reset link to your registered email.",
+                style: AppTypography.inter(fontSize: 13, color: ext.slate),
+              ),
+              const SizedBox(height: 28),
+              if (_submitted)
+                _SuccessMessage(cardNumber: _cardController.text.trim())
+              else
+                Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      AppTextField(
+                        controller: _cardController,
+                        label: 'Library card number',
+                        prefixIcon: Icons.badge_outlined,
+                        validator: Validators.cardNumber,
+                      ),
+                      const SizedBox(height: 24),
+                      AppButton(
+                        label: 'Send reset link',
+                        isLoading: _isSubmitting,
+                        onPressed: _submit,
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
+    );
+  }
+}
+
+class _SuccessMessage extends StatelessWidget {
+  const _SuccessMessage({required this.cardNumber});
+
+  final String cardNumber;
+
+  @override
+  Widget build(BuildContext context) {
+    final ext = Theme.of(context).extension<AppColorExtension>()!;
+
+    return Column(
+      children: [
+        Icon(Icons.check_circle_rounded, size: 48, color: ext.primary),
+        const SizedBox(height: 16),
+        Text(
+          'Reset link sent',
+          style: AppTypography.lora(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: ext.inkText,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'If an account exists for card $cardNumber, a reset link has been emailed to the address on file.',
+          textAlign: TextAlign.center,
+          style: AppTypography.inter(fontSize: 13, color: ext.slate),
+        ),
+      ],
     );
   }
 }
