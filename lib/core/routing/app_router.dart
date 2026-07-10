@@ -16,12 +16,15 @@ import '../../presentation/catalog/search_results_screen.dart';
 import '../../presentation/catalog/search_screen.dart';
 import '../../presentation/catalog/subject_browse_screen.dart';
 import '../../presentation/home/home_screen.dart';
+import '../../presentation/notifications/notification_prefs_screen.dart';
+import '../../presentation/notifications/notifications_screen.dart';
+import '../../presentation/notifications/saved_searches_screen.dart';
 import 'app_routes.dart';
 
 /// App-wide [GoRouter] configuration.
 ///
-/// - Auth (7), Home (8), Catalog (9), and Account (10) now point at
-///   their real screens. Notifications, Profile, and Staff remain
+/// - Auth (7), Home (8), Catalog (9), Account (10), and Notifications
+///   (11) now point at their real screens. Profile and Staff remain
 ///   placeholders until their own phases land.
 /// - Patron tabs (Home · Search · Account · Notifications · Profile)
 ///   live under a [StatefulShellRoute] with a custom
@@ -123,18 +126,15 @@ class AppRouter {
           StatefulShellBranch(routes: [
             GoRoute(
               path: AppRoutes.notifications,
-              builder: (context, state) =>
-              const _PlaceholderScreen(title: 'Notifications', phase: 11),
+              builder: (context, state) => const NotificationsScreen(),
               routes: [
                 GoRoute(
                   path: 'saved-searches',
-                  builder: (context, state) =>
-                  const _PlaceholderScreen(title: 'Saved Searches', phase: 11),
+                  builder: (context, state) => const SavedSearchesScreen(),
                 ),
                 GoRoute(
                   path: 'preferences',
-                  builder: (context, state) => const _PlaceholderScreen(
-                      title: 'Notification Preferences', phase: 11),
+                  builder: (context, state) => const NotificationPrefsScreen(),
                 ),
               ],
             ),

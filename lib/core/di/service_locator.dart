@@ -6,6 +6,7 @@ import '../../presentation/account/account_cubit.dart';
 import '../../presentation/auth/auth_cubit.dart';
 import '../../presentation/catalog/catalog_cubit.dart';
 import '../../presentation/home/home_cubit.dart';
+import '../../presentation/notifications/notifications_cubit.dart';
 import '../../presentation/theme/app_theme_cubit.dart';
 
 final GetIt sl = GetIt.instance;
@@ -31,15 +32,15 @@ Future<void> setupServiceLocator() async {
   sl.registerLazySingleton<AuthCubit>(() => AuthCubit(sl<LibraryRepository>()));
 
   // Multi-screen-flow singletons — shared across their pushed screen
-  // groups so state survives navigation between them (see Phase 9/10
-  // architecture notes).
+  // groups so state survives navigation between them.
   sl.registerLazySingleton<CatalogCubit>(() => CatalogCubit(sl<LibraryRepository>()));
   sl.registerLazySingleton<AccountCubit>(() => AccountCubit(sl<LibraryRepository>()));
+  sl.registerLazySingleton<NotificationsCubit>(() => NotificationsCubit(sl<LibraryRepository>()));
 
   // ── Feature Cubits (factories — new instance per screen visit) ──
   sl.registerFactory<HomeCubit>(() => HomeCubit(sl<LibraryRepository>()));
 
-  // NotificationsCubit (11), ProfileCubit (12), OfflineCubit (13),
-  // StaffCubit (14) are registered here as each is built in its
-  // phase. This file is reissued in full each time.
+  // ProfileCubit (12), OfflineCubit (13), StaffCubit (14) are
+  // registered here as each is built in its phase. This file is
+  // reissued in full each time.
 }
