@@ -73,16 +73,15 @@ class MockLibraryRepository implements LibraryRepository {
       throw const LibraryException('Password must be at least 4 characters.');
     }
 
-    final Patron? match = _patrons
+    final List<Patron> matches = _patrons
         .where((p) => p.cardnumber.toLowerCase() == cardnumber.toLowerCase())
-        .toList()
-        .let((list) => list.isEmpty ? null : list.first);
+        .toList();
 
-    if (match == null) {
+    if (matches.isEmpty) {
       throw const LibraryException('Invalid card number or password.');
     }
 
-    return match;
+    return matches.first;
   }
 
   // ── Patron ──────────────────────────────
@@ -128,6 +127,15 @@ class MockLibraryRepository implements LibraryRepository {
     return _items.where((i) => i.biblioId == biblioId).toList();
   }
 
+  @override
+  Future<Item> getItem(int itemId) async {
+    await _simulateLatency();
+    return _items.firstWhere(
+          (i) => i.itemId == itemId,
+      orElse: () => throw const LibraryException('Item not found.'),
+    );
+  }
+
   // ── Checkouts ──────────────────────────────
 
   @override
@@ -164,10 +172,6 @@ class MockLibraryRepository implements LibraryRepository {
   @override
   Future<List<Checkout>> getBorrowingHistory(int patronId) async {
     await _simulateLatency();
-    // Mock has no separate "returned" ledger; borrowing history is
-    // demonstrated as an empty list until staffCheckin() moves items
-    // out of the active _checkouts list (see staffCheckin below,
-    // which appends to _returnedCheckouts).
     return _returnedCheckouts.where((c) => c.patronId == patronId).toList();
   }
 
@@ -321,11 +325,4 @@ class MockLibraryRepository implements LibraryRepository {
           i.itemnumber.toString().contains(q);
     }).toList();
   }
-}
-
-/// Small `let`-style extension so `login()` can express "find first
-/// or null" as a single expression without importing collection
-/// package just for this one call site.
-extension _Let<T> on T {
-  R let<R>(R Function(T) block) => block(this);
 }

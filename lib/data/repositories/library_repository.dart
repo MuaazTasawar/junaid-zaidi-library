@@ -11,9 +11,9 @@ import '../models/patron.dart';
 /// directly (Golden Rule #4: no direct HTTP calls outside this
 /// layer, no widget/cubit ever touches the network).
 ///
-/// Swapping `useMock` in `core/di/service_locator.dart` (Phase 6)
-/// from the mock implementation to a real `KohaLibraryRepository`
-/// must require zero changes above this layer.
+/// Swapping `useMock` in `core/di/service_locator.dart` from the mock
+/// implementation to a real `KohaLibraryRepository` must require zero
+/// changes above this layer.
 ///
 /// Method → Koha REST endpoint mapping (for the future
 /// `KohaLibraryRepository` implementation):
@@ -25,6 +25,7 @@ import '../models/patron.dart';
 /// | searchCatalog()          | GET  /api/v1/biblios?q=                                  |
 /// | getBiblio()              | GET  /api/v1/biblios/{biblio_id}                         |
 /// | getItems()               | GET  /api/v1/biblios/{biblio_id}/items                   |
+/// | getItem()                | GET  /api/v1/items/{item_id}                             |
 /// | getCheckouts()           | GET  /api/v1/checkouts?patron_id=                        |
 /// | renewCheckout()          | POST /api/v1/checkouts/{checkout_id}/renewal             |
 /// | getHolds()               | GET  /api/v1/holds?patron_id=                            |
@@ -48,6 +49,7 @@ abstract class LibraryRepository {
   Future<Patron> getPatron(int patronId);
 
   /// Full-text search across the catalog (title/author/subject/ISBN).
+  /// An empty query returns the full catalog.
   Future<List<Biblio>> searchCatalog(String query);
 
   /// Fetches a single biblio (title-level record) by ID.
@@ -55,6 +57,11 @@ abstract class LibraryRepository {
 
   /// Fetches all physical item copies (holdings) for a biblio.
   Future<List<Item>> getItems(int biblioId);
+
+  /// Fetches a single physical item by its internal ID. Needed to
+  /// resolve a [Checkout.itemId] (or [Hold]/staff-scan barcode) down
+  /// to a concrete item without already knowing its parent biblio.
+  Future<Item> getItem(int itemId);
 
   /// Fetches all currently active (not yet returned) checkouts for a patron.
   Future<List<Checkout>> getCheckouts(int patronId);

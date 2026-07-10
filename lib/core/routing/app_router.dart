@@ -3,14 +3,15 @@ import 'package:go_router/go_router.dart';
 
 import '../../presentation/auth/forgot_password_screen.dart';
 import '../../presentation/auth/login_screen.dart';
-import 'package:junaid_zaidi_library/presentation/auth/splash_screen.dart';
+import '../../presentation/auth/splash_screen.dart';
+import '../../presentation/home/home_screen.dart';
 import 'app_routes.dart';
 
 /// App-wide [GoRouter] configuration.
 ///
-/// - Auth routes (splash/login/forgot-password) now point at their
-///   real screens (Phase 7). Everything else remains a placeholder
-///   until its own phase lands.
+/// - Auth routes (Phase 7) and Home (Phase 8) now point at their real
+///   screens. Everything else remains a placeholder until its own
+///   phase lands.
 /// - Patron tabs (Home · Search · Account · Notifications · Profile)
 ///   live under a [StatefulShellRoute] with a custom
 ///   [navigatorContainerBuilder] so tab switches use [FadeTransition].
@@ -45,8 +46,7 @@ class AppRouter {
           StatefulShellBranch(routes: [
             GoRoute(
               path: AppRoutes.home,
-              builder: (context, state) =>
-              const _PlaceholderScreen(title: 'Home', phase: 8),
+              builder: (context, state) => const HomeScreen(),
             ),
           ]),
           StatefulShellBranch(routes: [
