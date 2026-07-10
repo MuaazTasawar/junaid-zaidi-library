@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../presentation/auth/forgot_password_screen.dart';
+import '../../presentation/auth/login_screen.dart';
+import 'package:junaid_zaidi_library/presentation/auth/splash_screen.dart';
 import 'app_routes.dart';
 
 /// App-wide [GoRouter] configuration.
 ///
+/// - Auth routes (splash/login/forgot-password) now point at their
+///   real screens (Phase 7). Everything else remains a placeholder
+///   until its own phase lands.
 /// - Patron tabs (Home · Search · Account · Notifications · Profile)
 ///   live under a [StatefulShellRoute] with a custom
-///   [navigatorContainerBuilder] so tab switches use [FadeTransition]
-///   (per the design system spec) instead of the default un-animated
-///   IndexedStack swap.
+///   [navigatorContainerBuilder] so tab switches use [FadeTransition].
 /// - Detail-style screens (book detail, staff patron/item detail) use
 ///   [CustomTransitionPage] with a bottom-to-top [SlideTransition].
-/// - Every screen referenced below is a placeholder until its own
-///   phase lands (7–14); this file is reissued in full each time a
-///   route's placeholder is swapped for the real screen.
 class AppRouter {
   const AppRouter._();
 
@@ -23,18 +24,15 @@ class AppRouter {
     routes: [
       GoRoute(
         path: AppRoutes.splash,
-        builder: (context, state) =>
-        const _PlaceholderScreen(title: 'Splash', phase: 7),
+        builder: (context, state) => const SplashScreen(),
       ),
       GoRoute(
         path: AppRoutes.login,
-        builder: (context, state) =>
-        const _PlaceholderScreen(title: 'Login', phase: 7),
+        builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
         path: AppRoutes.forgotPassword,
-        builder: (context, state) =>
-        const _PlaceholderScreen(title: 'Forgot Password', phase: 7),
+        builder: (context, state) => const ForgotPasswordScreen(),
       ),
 
       // ── Patron shell (bottom nav) ──────────────────────────────
@@ -233,9 +231,7 @@ class AppRouter {
 
 /// Bottom-nav shell for the 5 patron tabs. Tab switches fade rather
 /// than snap, per the design system's `Tab switches: FadeTransition`
-/// rule. Trade-off: this rebuilds the incoming branch's subtree on
-/// every switch (no persistent IndexedStack), which is an acceptable
-/// cost for the fade requirement at this app's scale.
+/// rule.
 class _AppShell extends StatelessWidget {
   const _AppShell({
     required this.navigationShell,
@@ -295,10 +291,8 @@ class _AppShell extends StatelessWidget {
   }
 }
 
-/// Temporary stand-in for screens not yet built. Shows the intended
-/// screen name and which phase will implement it, with a back button
-/// when it's not a shell-tab root. Every usage above is replaced with
-/// the real screen inside that screen's own phase.
+/// Temporary stand-in for screens not yet built. Replaced with the
+/// real screen inside that screen's own phase.
 class _PlaceholderScreen extends StatelessWidget {
   const _PlaceholderScreen({required this.title, required this.phase});
 
