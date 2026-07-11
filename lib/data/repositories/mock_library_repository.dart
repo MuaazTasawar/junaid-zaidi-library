@@ -145,6 +145,15 @@ class MockLibraryRepository implements LibraryRepository {
   }
 
   @override
+  Future<Checkout> getCheckoutForItem(int itemId) async {
+    await _simulateLatency();
+    return _checkouts.firstWhere(
+          (c) => c.itemId == itemId,
+      orElse: () => throw const LibraryException('This item is not currently checked out.'),
+    );
+  }
+
+  @override
   Future<Checkout> renewCheckout(int checkoutId) async {
     await _simulateLatency();
 

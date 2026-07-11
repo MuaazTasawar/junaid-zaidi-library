@@ -10,6 +10,7 @@ import '../../presentation/home/home_cubit.dart';
 import '../../presentation/notifications/notifications_cubit.dart';
 import '../../presentation/offline/offline_cubit.dart';
 import '../../presentation/profile/profile_cubit.dart';
+import '../../presentation/staff/staff_cubit.dart';
 import '../../presentation/theme/app_theme_cubit.dart';
 
 final GetIt sl = GetIt.instance;
@@ -50,10 +51,8 @@ Future<void> setupServiceLocator() async {
   sl.registerLazySingleton<AccountCubit>(() => AccountCubit(sl<LibraryRepository>()));
   sl.registerLazySingleton<NotificationsCubit>(() => NotificationsCubit(sl<LibraryRepository>()));
   sl.registerLazySingleton<ProfileCubit>(() => ProfileCubit(sl<LibraryRepository>()));
+  sl.registerLazySingleton<StaffCubit>(() => StaffCubit(sl<LibraryRepository>()));
 
   // ── Feature Cubits (factories — new instance per screen visit) ──
   sl.registerFactory<HomeCubit>(() => HomeCubit(sl<LibraryRepository>()));
-
-  // StaffCubit (14) is registered here once built. This file is
-  // reissued in full each time.
 }

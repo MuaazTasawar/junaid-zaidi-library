@@ -23,17 +23,19 @@ import '../../presentation/offline/offline_screen.dart';
 import '../../presentation/profile/personalization_screen.dart';
 import '../../presentation/profile/profile_screen.dart';
 import '../../presentation/profile/settings_screen.dart';
+import '../../presentation/staff/staff_home_screen.dart';
+import '../../presentation/staff/staff_item_detail_screen.dart';
+import '../../presentation/staff/staff_item_search_screen.dart';
+import '../../presentation/staff/staff_patron_account_screen.dart';
+import '../../presentation/staff/staff_patron_search_screen.dart';
+import '../../presentation/staff/staff_scan_checkin_screen.dart';
+import '../../presentation/staff/staff_scan_checkout_screen.dart';
 import 'app_routes.dart';
 
-/// App-wide [GoRouter] configuration.
-///
-/// - Auth (7) through Offline (13) now all point at their real
-///   screens. Only Staff remains a placeholder until Phase 14.
-/// - Patron tabs (Home · Search · Account · Notifications · Profile)
-///   live under a [StatefulShellRoute] with a custom
-///   [navigatorContainerBuilder] so tab switches use [FadeTransition].
-/// - Detail-style screens (book detail, staff patron/item detail) use
-///   [CustomTransitionPage] with a bottom-to-top [SlideTransition].
+/// App-wide [GoRouter] configuration. Every route now points at its
+/// real screen — Phase 14 was the last content phase. Phase 15
+/// (Polish) refines animations/transitions/accessibility across these
+/// screens rather than adding new routes.
 class AppRouter {
   const AppRouter._();
 
@@ -169,44 +171,37 @@ class AppRouter {
       // ── Staff ──────────────────────────────
       GoRoute(
         path: AppRoutes.staffHome,
-        builder: (context, state) =>
-        const _PlaceholderScreen(title: 'Staff Home', phase: 14),
+        builder: (context, state) => const StaffHomeScreen(),
       ),
       GoRoute(
         path: AppRoutes.staffScanCheckout,
-        builder: (context, state) =>
-        const _PlaceholderScreen(title: 'Staff Scan Checkout', phase: 14),
+        builder: (context, state) => const StaffScanCheckoutScreen(),
       ),
       GoRoute(
         path: AppRoutes.staffScanCheckin,
-        builder: (context, state) =>
-        const _PlaceholderScreen(title: 'Staff Scan Checkin', phase: 14),
+        builder: (context, state) => const StaffScanCheckinScreen(),
       ),
       GoRoute(
         path: AppRoutes.staffPatronSearch,
-        builder: (context, state) =>
-        const _PlaceholderScreen(title: 'Staff Patron Search', phase: 14),
+        builder: (context, state) => const StaffPatronSearchScreen(),
       ),
       GoRoute(
         path: '${AppRoutes.staffPatronAccount}/:patronId',
         pageBuilder: (context, state) => _slideUpPage(
-          child: _PlaceholderScreen(
-            title: 'Staff Patron #${state.pathParameters['patronId']}',
-            phase: 14,
+          child: StaffPatronAccountScreen(
+            patronId: int.parse(state.pathParameters['patronId']!),
           ),
         ),
       ),
       GoRoute(
         path: AppRoutes.staffItemSearch,
-        builder: (context, state) =>
-        const _PlaceholderScreen(title: 'Staff Item Search', phase: 14),
+        builder: (context, state) => const StaffItemSearchScreen(),
       ),
       GoRoute(
         path: '${AppRoutes.staffItemDetail}/:itemId',
         pageBuilder: (context, state) => _slideUpPage(
-          child: _PlaceholderScreen(
-            title: 'Staff Item #${state.pathParameters['itemId']}',
-            phase: 14,
+          child: StaffItemDetailScreen(
+            itemId: int.parse(state.pathParameters['itemId']!),
           ),
         ),
       ),
@@ -287,29 +282,6 @@ class _AppShell extends StatelessWidget {
             label: 'Profile',
           ),
         ],
-      ),
-    );
-  }
-}
-
-/// Temporary stand-in for screens not yet built. Replaced with the
-/// real screen inside that screen's own phase.
-class _PlaceholderScreen extends StatelessWidget {
-  const _PlaceholderScreen({required this.title, required this.phase});
-
-  final String title;
-  final int phase;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(
-        child: Text(
-          '$title\nbuilt in Phase $phase',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
       ),
     );
   }

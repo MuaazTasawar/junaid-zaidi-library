@@ -27,6 +27,7 @@ import '../models/patron.dart';
 /// | getItems()               | GET  /api/v1/biblios/{biblio_id}/items                   |
 /// | getItem()                | GET  /api/v1/items/{item_id}                             |
 /// | getCheckouts()           | GET  /api/v1/checkouts?patron_id=                        |
+/// | getCheckoutForItem()     | GET  /api/v1/checkouts?item_id=                          |
 /// | renewCheckout()          | POST /api/v1/checkouts/{checkout_id}/renewal             |
 /// | getHolds()               | GET  /api/v1/holds?patron_id=                            |
 /// | placeHold()              | POST /api/v1/holds                                       |
@@ -58,13 +59,18 @@ abstract class LibraryRepository {
   /// Fetches all physical item copies (holdings) for a biblio.
   Future<List<Item>> getItems(int biblioId);
 
-  /// Fetches a single physical item by its internal ID. Needed to
-  /// resolve a [Checkout.itemId] (or [Hold]/staff-scan barcode) down
-  /// to a concrete item without already knowing its parent biblio.
+  /// Fetches a single physical item by its internal ID.
   Future<Item> getItem(int itemId);
 
   /// Fetches all currently active (not yet returned) checkouts for a patron.
   Future<List<Checkout>> getCheckouts(int patronId);
+
+  /// Fetches the currently active checkout for a given item, if any
+  /// (i.e. "who has this book out right now"). Throws
+  /// [LibraryException] if the item is not currently checked out.
+  /// Needed by staff check-in to show "previously checked out by"
+  /// without already knowing the patron.
+  Future<Checkout> getCheckoutForItem(int itemId);
 
   /// Renews an active checkout, extending its due date. Throws
   /// [LibraryException] if the renewal limit has been reached.
