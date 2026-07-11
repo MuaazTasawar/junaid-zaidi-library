@@ -19,6 +19,7 @@ import '../../presentation/home/home_screen.dart';
 import '../../presentation/notifications/notification_prefs_screen.dart';
 import '../../presentation/notifications/notifications_screen.dart';
 import '../../presentation/notifications/saved_searches_screen.dart';
+import '../../presentation/offline/offline_screen.dart';
 import '../../presentation/profile/personalization_screen.dart';
 import '../../presentation/profile/profile_screen.dart';
 import '../../presentation/profile/settings_screen.dart';
@@ -26,9 +27,8 @@ import 'app_routes.dart';
 
 /// App-wide [GoRouter] configuration.
 ///
-/// - Auth (7), Home (8), Catalog (9), Account (10), Notifications
-///   (11), and Profile (12) now point at their real screens. Only
-///   Staff remains a placeholder until Phase 14.
+/// - Auth (7) through Offline (13) now all point at their real
+///   screens. Only Staff remains a placeholder until Phase 14.
 /// - Patron tabs (Home · Search · Account · Notifications · Profile)
 ///   live under a [StatefulShellRoute] with a custom
 ///   [navigatorContainerBuilder] so tab switches use [FadeTransition].
@@ -163,8 +163,7 @@ class AppRouter {
 
       GoRoute(
         path: AppRoutes.offline,
-        builder: (context, state) =>
-        const _PlaceholderScreen(title: 'Offline', phase: 13),
+        builder: (context, state) => const OfflineScreen(),
       ),
 
       // ── Staff ──────────────────────────────
