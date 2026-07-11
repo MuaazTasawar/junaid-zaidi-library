@@ -15,11 +15,13 @@ import 'notifications_state.dart';
 /// resource to fetch — and manages saved searches + preferences,
 /// all persisted in Hive since none of this is backend-owned data.
 ///
-/// As of Phase 15, [loadNotifications] also pushes real local device
-/// notifications via [NotificationService] for newly-appeared items
-/// (ones not already fired this session), respecting the user's
-/// [NotificationPrefs] toggles. See Phase 15 scope note on why this
-/// fires on load/resume rather than at an exact background time.
+/// As of Phase 16, due-date reminders are scheduled for a real future
+/// device time via [NotificationService.scheduleAt] (fires even if
+/// the app is closed, computed as `prefs.daysBefore` days before the
+/// due date at 9:00 AM local). Hold-ready and overdue alerts represent
+/// states that are already true, so those still fire immediately via
+/// [NotificationService.showNow] rather than being "scheduled" for a
+/// future time that doesn't apply to them.
 class NotificationsCubit extends Cubit<NotificationsState> {
   NotificationsCubit(this._repository, this._notificationService)
       : super(const NotificationsState()) {
@@ -57,6 +59,8 @@ class NotificationsCubit extends Cubit<NotificationsState> {
       final Set<String> dismissedIds =
       ((box.get(_dismissedIdsKey) as List?)?.cast<String>() ?? []).toSet();
 
+      final Set<int> alreadyScheduled = await _notificationService.pendingIds();
+
       final List<NotificationItem> synthesized = [];
       final NotificationPrefs prefs = state.prefs;
 
@@ -84,7 +88,24 @@ class NotificationsCubit extends Cubit<NotificationsState> {
             createdAt: c.issuedate,
             isRead: readIds.contains(id),
           ));
-          await _fireOnce(id, 'Due soon', 'An item is due back soon.');
+
+          // Schedule the real reminder for daysBefore-days-before due
+          // date at 9:00 AM, rather than firing now.
+          final int notifId = id.hashCode;
+          if (!alreadyScheduled.contains(notifId)) {
+            final DateTime reminderTime = DateTime(
+              c.dueDate.year,
+              c.dueDate.month,
+              c.dueDate.day - prefs.daysBefore,
+              9,
+            );
+            await _notificationService.scheduleAt(
+              id: notifId,
+              title: 'Due soon',
+              body: 'An item is due back on ${c.dueDate.month}/${c.dueDate.day}.',
+              scheduledTime: reminderTime,
+            );
+          }
         }
       }
 
@@ -135,7 +156,10 @@ class NotificationsCubit extends Cubit<NotificationsState> {
 
   /// Fires a real device notification for [id] at most once per app
   /// session, so re-visiting the Notifications tab doesn't re-alert
-  /// for the same overdue/due-soon/hold-ready item repeatedly.
+  /// for the same overdue/hold-ready item repeatedly. Only used for
+  /// states that are already true "now" (overdue, hold ready) — see
+  /// class doc for why due-soon uses [NotificationService.scheduleAt]
+  /// instead.
   Future<void> _fireOnce(String id, String title, String body) async {
     if (_firedThisSession.contains(id)) return;
     _firedThisSession.add(id);
@@ -161,6 +185,8 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     final Set<String> dismissedIds =
     ((box.get(_dismissedIdsKey) as List?)?.cast<String>() ?? []).toSet()..add(id);
     await box.put(_dismissedIdsKey, dismissedIds.toList());
+
+    await _notificationService.cancel(id.hashCode);
 
     emit(state.copyWith(
       notifications: state.notifications.where((n) => n.id != id).toList(),
