@@ -19,13 +19,16 @@ import '../../presentation/home/home_screen.dart';
 import '../../presentation/notifications/notification_prefs_screen.dart';
 import '../../presentation/notifications/notifications_screen.dart';
 import '../../presentation/notifications/saved_searches_screen.dart';
+import '../../presentation/profile/personalization_screen.dart';
+import '../../presentation/profile/profile_screen.dart';
+import '../../presentation/profile/settings_screen.dart';
 import 'app_routes.dart';
 
 /// App-wide [GoRouter] configuration.
 ///
-/// - Auth (7), Home (8), Catalog (9), Account (10), and Notifications
-///   (11) now point at their real screens. Profile and Staff remain
-///   placeholders until their own phases land.
+/// - Auth (7), Home (8), Catalog (9), Account (10), Notifications
+///   (11), and Profile (12) now point at their real screens. Only
+///   Staff remains a placeholder until Phase 14.
 /// - Patron tabs (Home · Search · Account · Notifications · Profile)
 ///   live under a [StatefulShellRoute] with a custom
 ///   [navigatorContainerBuilder] so tab switches use [FadeTransition].
@@ -142,18 +145,15 @@ class AppRouter {
           StatefulShellBranch(routes: [
             GoRoute(
               path: AppRoutes.profile,
-              builder: (context, state) =>
-              const _PlaceholderScreen(title: 'Profile', phase: 12),
+              builder: (context, state) => const ProfileScreen(),
               routes: [
                 GoRoute(
                   path: 'personalization',
-                  builder: (context, state) =>
-                  const _PlaceholderScreen(title: 'Personalization', phase: 12),
+                  builder: (context, state) => const PersonalizationScreen(),
                 ),
                 GoRoute(
                   path: 'settings',
-                  builder: (context, state) =>
-                  const _PlaceholderScreen(title: 'Settings', phase: 12),
+                  builder: (context, state) => const SettingsScreen(),
                 ),
               ],
             ),
