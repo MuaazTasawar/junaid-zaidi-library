@@ -9,9 +9,11 @@ import '../../core/utils/date_formatter.dart';
 /// (e.g. "DUE JUL 14"), colored by how close/overdue the date is.
 /// Animates in with a settle/bounce on first render.
 ///
-/// Status + date formatting now delegate to [DateFormatter] — the
-/// local logic this widget carried in Phase 2 has been removed
-/// (Phase 6).
+/// Wrapped in [Semantics] (Phase 15) so a screen reader announces the
+/// urgency in words ("Overdue, due July 14" / "Due soon..." / "Due
+/// July 14") rather than relying on the stamp's color alone, which
+/// carries the actual meaning visually but is invisible to
+/// accessibility tools without an explicit label.
 class DueDateStamp extends StatefulWidget {
   const DueDateStamp({
     super.key,
@@ -59,6 +61,15 @@ class _DueDateStampState extends State<DueDateStamp>
     super.dispose();
   }
 
+  String _semanticLabel(DueStatus status) {
+    final String dateText = DateFormatter.monoDate(widget.dueDate);
+    return switch (status) {
+      DueStatus.overdue => 'Overdue, was due $dateText',
+      DueStatus.dueSoon => 'Due soon, $dateText',
+      DueStatus.safe => 'Due $dateText',
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final ext = Theme.of(context).extension<AppColorExtension>()!;
@@ -70,30 +81,35 @@ class _DueDateStampState extends State<DueDateStamp>
       DueStatus.safe => ext.inkText,
     };
 
-    return AnimatedBuilder(
-      animation: _controller,
-      builder: (context, child) {
-        return Transform.rotate(
-          angle: -4 * 3.14159265 / 180,
-          child: Transform.scale(
-            scale: _scale.value,
-            child: child,
-          ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          border: Border.all(color: color, width: 1.5),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Text(
-          '${widget.label} ${DateFormatter.monoDate(widget.dueDate)}',
-          style: AppTypography.mono(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: color,
-            letterSpacing: 0.4,
+    return Semantics(
+      label: _semanticLabel(status),
+      child: ExcludeSemantics(
+        child: AnimatedBuilder(
+          animation: _controller,
+          builder: (context, child) {
+            return Transform.rotate(
+              angle: -4 * 3.14159265 / 180,
+              child: Transform.scale(
+                scale: _scale.value,
+                child: child,
+              ),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              border: Border.all(color: color, width: 1.5),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              '${widget.label} ${DateFormatter.monoDate(widget.dueDate)}',
+              style: AppTypography.mono(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: color,
+                letterSpacing: 0.4,
+              ),
+            ),
           ),
         ),
       ),

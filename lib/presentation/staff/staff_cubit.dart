@@ -2,6 +2,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/models/biblio.dart';
 import '../../data/models/checkout.dart';
+import '../../data/models/fine.dart';
+import '../../data/models/hold.dart';
 import '../../data/models/item.dart';
 import '../../data/models/patron.dart';
 import '../../data/repositories/library_repository.dart';
@@ -187,19 +189,21 @@ class StaffCubit extends Cubit<StaffState> {
   Future<void> loadStaffPatronAccount(int patronId) async {
     emit(state.copyWith(staffPatronAccountStatus: SectionStatus.loading));
     try {
-      final results = await Future.wait([
-        _repository.getPatron(patronId),
-        _repository.getCheckouts(patronId),
-        _repository.getHolds(patronId),
-        _repository.getAccount(patronId),
-      ]);
+      // Awaited as separate typed calls rather than a single
+      // Future.wait([...]) — mixing return types (Patron,
+      // List<Checkout>, List<Hold>, List<Fine>) in one wait() call
+      // erases each element's type to Object, forcing unsafe casts.
+      final Patron patron = await _repository.getPatron(patronId);
+      final List<Checkout> checkouts = await _repository.getCheckouts(patronId);
+      final List<Hold> holds = await _repository.getHolds(patronId);
+      final List<Fine> fines = await _repository.getAccount(patronId);
 
       emit(state.copyWith(
         staffPatronAccountStatus: SectionStatus.loaded,
-        staffPatron: results[0] as Patron,
-        staffPatronCheckouts: results[1] as List<Checkout>,
-        staffPatronHolds: results[2] as List,
-        staffPatronFines: results[3] as List,
+        staffPatron: patron,
+        staffPatronCheckouts: checkouts,
+        staffPatronHolds: holds,
+        staffPatronFines: fines,
       ));
     } on LibraryException {
       emit(state.copyWith(staffPatronAccountStatus: SectionStatus.error));

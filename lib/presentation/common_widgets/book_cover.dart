@@ -10,9 +10,9 @@ import '../../core/utils/cover_color_resolver.dart';
 /// the right containing the title (Lora) and author (Inter,
 /// small-caps via letter-spacing + uppercase, 70% opacity white).
 ///
-/// Color is resolved via [CoverColorResolver] — the local subject
-/// map this widget carried in Phase 2 has been removed in favor of
-/// that single canonical source (Phase 6).
+/// Wrapped in [Semantics] (Phase 15) so screen readers announce "Book
+/// cover: {title} by {author}" as one unit instead of reading the
+/// title and author Text widgets as two disconnected fragments.
 class BookCover extends StatelessWidget {
   const BookCover({
     super.key,
@@ -33,56 +33,62 @@ class BookCover extends StatelessWidget {
   Widget build(BuildContext context) {
     final CoverColors colors = CoverColorResolver.resolve(subject);
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(6),
-      child: SizedBox(
-        width: width,
-        height: height,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Container(
-              width: 8,
-              color: colors.spine,
-            ),
-            Expanded(
-              child: Container(
-                color: colors.body,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 10,
+    return Semantics(
+      label: 'Book cover: $title by $author',
+      image: true,
+      child: ExcludeSemantics(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: SizedBox(
+            width: width,
+            height: height,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Container(
+                  width: 8,
+                  color: colors.spine,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      title,
-                      maxLines: 4,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.lora(
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                        height: 1.25,
-                      ),
+                Expanded(
+                  child: Container(
+                    color: colors.body,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 10,
                     ),
-                    Text(
-                      author.toUpperCase(),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.inter(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.white.withOpacity(0.7),
-                        letterSpacing: 0.6,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          title,
+                          maxLines: 4,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.lora(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            height: 1.25,
+                          ),
+                        ),
+                        Text(
+                          author.toUpperCase(),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.inter(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.white.withOpacity(0.7),
+                            letterSpacing: 0.6,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

@@ -21,6 +21,12 @@ enum StatusBadgeKind {
 /// item availability, hold state, borrowing history entries, etc.
 /// Color is derived from [kind] via `context.libColors` — never
 /// hardcoded per call site.
+///
+/// Wrapped in [Semantics] (Phase 15): the badge's [label] is already
+/// readable text, but marking it explicitly as a semantic label
+/// (rather than letting it merge with surrounding row text) keeps it
+/// announced as a distinct status when it sits inline with a title,
+/// e.g. inside `CheckoutsScreen` result rows.
 class StatusBadge extends StatelessWidget {
   const StatusBadge({
     super.key,
@@ -49,18 +55,23 @@ class StatusBadge extends StatelessWidget {
       StatusBadgeKind.neutral => ext.slate,
     };
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.14),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: AppTypography.inter(
-          fontSize: 11.5,
-          fontWeight: FontWeight.w600,
-          color: color,
+    return Semantics(
+      label: 'Status: $label',
+      child: ExcludeSemantics(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.14),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            label,
+            style: AppTypography.inter(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: color,
+            ),
+          ),
         ),
       ),
     );
