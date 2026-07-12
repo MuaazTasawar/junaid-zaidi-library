@@ -7,20 +7,20 @@ import '../models/patron.dart';
 
 /// Single contract for all library data access. Every Cubit in
 /// `presentation/` depends on this abstraction — never on
-/// [MockLibraryRepository] or a future `KohaLibraryRepository`
-/// directly (Golden Rule #4: no direct HTTP calls outside this
-/// layer, no widget/cubit ever touches the network).
+/// [MockLibraryRepository] or [KohaLibraryRepository] directly
+/// (Golden Rule #4: no direct HTTP calls outside this layer, no
+/// widget/cubit ever touches the network).
 ///
 /// Swapping `useMock` in `core/di/service_locator.dart` from the mock
-/// implementation to a real `KohaLibraryRepository` must require zero
-/// changes above this layer.
+/// implementation to [KohaLibraryRepository] requires zero changes
+/// above this layer — that's the whole point of the contract.
 ///
-/// Method → Koha REST endpoint mapping (for the future
-/// `KohaLibraryRepository` implementation):
+/// Method → Koha REST endpoint mapping:
 ///
 /// | Method                 | Koha endpoint                                          |
 /// |-------------------------|---------------------------------------------------------|
 /// | login()                 | GET  /api/v1/patrons?cardnumber= (Basic Auth)            |
+/// | logout()                | (client-side only — clears stored credentials)           |
 /// | getPatron()              | GET  /api/v1/patrons/{patron_id}                         |
 /// | searchCatalog()          | GET  /api/v1/biblios?q=                                  |
 /// | getBiblio()              | GET  /api/v1/biblios/{biblio_id}                         |
@@ -46,6 +46,11 @@ abstract class LibraryRepository {
     required String password,
   });
 
+  /// Clears any stored session/credentials client-side. No-op for
+  /// [MockLibraryRepository]; clears Basic Auth credentials and any
+  /// cached staff OAuth token for [KohaLibraryRepository].
+  Future<void> logout();
+
   /// Fetches a single patron's profile by internal ID.
   Future<Patron> getPatron(int patronId);
 
@@ -65,11 +70,7 @@ abstract class LibraryRepository {
   /// Fetches all currently active (not yet returned) checkouts for a patron.
   Future<List<Checkout>> getCheckouts(int patronId);
 
-  /// Fetches the currently active checkout for a given item, if any
-  /// (i.e. "who has this book out right now"). Throws
-  /// [LibraryException] if the item is not currently checked out.
-  /// Needed by staff check-in to show "previously checked out by"
-  /// without already knowing the patron.
+  /// Fetches the currently active checkout for a given item, if any.
   Future<Checkout> getCheckoutForItem(int itemId);
 
   /// Renews an active checkout, extending its due date. Throws
@@ -112,9 +113,9 @@ abstract class LibraryRepository {
 
 /// Thrown by [LibraryRepository] implementations for all
 /// domain-level failures (invalid login, renewal limit reached,
-/// item unavailable, network failure once `KohaLibraryRepository`
-/// exists, etc). Cubits catch this and map [message] straight into
-/// their error state for display via `ErrorState`/`AppButton` retry.
+/// item unavailable, network failure, auth failure, etc). Cubits
+/// catch this and map [message] straight into their error state for
+/// display via `ErrorState`/`AppButton` retry.
 class LibraryException implements Exception {
   const LibraryException(this.message);
 

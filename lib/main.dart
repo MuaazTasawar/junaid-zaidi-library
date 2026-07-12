@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
@@ -12,16 +13,31 @@ Future<void> main() async {
 
   await Hive.initFlutter();
 
-  // Required before any zonedSchedule() call in NotificationService.
-  tz_data.initializeTimeZones();
-  // No reliable way to detect the device's IANA timezone name without
-  // an extra plugin (flutter_timezone etc.), which isn't declared —
-  // defaulting to UTC is honest and safe rather than guessing a local
-  // zone; reminders will be off by the device's UTC offset until a
-  // timezone-detection package is added. Flagging in code, not hiding it.
-  tz.setLocalLocation(tz.getLocation('UTC'));
+  await _initializeTimezone();
 
   await setupServiceLocator();
 
   runApp(const App());
+}
+
+/// Detects the device's real IANA timezone (e.g. "Asia/Karachi") via
+/// `flutter_timezone` and sets it as the `timezone` package's local
+/// location, so `NotificationService.scheduleAt()` computes reminder
+/// times against the user's actual local time rather than UTC.
+///
+/// Falls back to UTC — logged, not silently swallowed — if detection
+/// fails (e.g. an unsupported platform or a name the `timezone`
+/// package's database doesn't recognize), so scheduling still works
+/// rather than crashing app startup.
+Future<void> _initializeTimezone() async {
+  tz_data.initializeTimeZones();
+
+  try {
+    final TimezoneInfo info = await FlutterTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(info.identifier));
+  } catch (e) {
+    debugPrint('Timezone detection failed ($e); falling back to UTC. '
+        'Due-date reminder times will be offset from local time.');
+    tz.setLocalLocation(tz.getLocation('UTC'));
+  }
 }

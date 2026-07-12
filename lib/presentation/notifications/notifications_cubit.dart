@@ -2,6 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive/hive.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../core/notifications/notification_service.dart';
 import '../../data/models/checkout.dart';
 import '../../data/models/hold.dart';
 import '../../data/models/notification_item.dart';
@@ -13,13 +14,25 @@ import 'notifications_state.dart';
 /// soon) and holds (ready for pickup) — there's no Koha "inbox"
 /// resource to fetch — and manages saved searches + preferences,
 /// all persisted in Hive since none of this is backend-owned data.
+///
+/// As of Phase 16, due-date reminders are scheduled for a real future
+/// device time via [NotificationService.scheduleAt] (fires even if
+/// the app is closed, computed as `prefs.daysBefore` days before the
+/// due date at 9:00 AM local). Hold-ready and overdue alerts represent
+/// states that are already true, so those still fire immediately via
+/// [NotificationService.showNow] rather than being "scheduled" for a
+/// future time that doesn't apply to them.
 class NotificationsCubit extends Cubit<NotificationsState> {
-  NotificationsCubit(this._repository) : super(const NotificationsState()) {
+  NotificationsCubit(this._repository, this._notificationService)
+      : super(const NotificationsState()) {
     _loadPrefs();
   }
 
   final LibraryRepository _repository;
+  final NotificationService _notificationService;
   static const _uuid = Uuid();
+
+  final Set<String> _firedThisSession = {};
 
   static const String _notificationsBoxName = 'notificationsBox';
   static const String _readIdsKey = 'readNotificationIds';
@@ -46,10 +59,13 @@ class NotificationsCubit extends Cubit<NotificationsState> {
       final Set<String> dismissedIds =
       ((box.get(_dismissedIdsKey) as List?)?.cast<String>() ?? []).toSet();
 
+      final Set<int> alreadyScheduled = await _notificationService.pendingIds();
+
       final List<NotificationItem> synthesized = [];
+      final NotificationPrefs prefs = state.prefs;
 
       for (final c in checkouts) {
-        if (c.isOverdue) {
+        if (c.isOverdue && prefs.overdueWarnings) {
           final id = 'overdue-${c.checkoutId}';
           if (dismissedIds.contains(id)) continue;
           synthesized.add(NotificationItem(
@@ -60,22 +76,41 @@ class NotificationsCubit extends Cubit<NotificationsState> {
             createdAt: c.dueDate,
             isRead: readIds.contains(id),
           ));
-        } else if (c.isDueSoon) {
+          await _fireOnce(id, 'Item overdue', 'A checked-out item is overdue.');
+        } else if (c.isDueSoon && prefs.dueDateReminders) {
           final id = 'duesoon-${c.checkoutId}';
           if (dismissedIds.contains(id)) continue;
           synthesized.add(NotificationItem(
             id: id,
             type: NotificationType.dueSoon,
             title: 'Due soon',
-            body: 'An item is due back within 3 days.',
+            body: 'An item is due back within ${prefs.daysBefore} days.',
             createdAt: c.issuedate,
             isRead: readIds.contains(id),
           ));
+
+          // Schedule the real reminder for daysBefore-days-before due
+          // date at 9:00 AM, rather than firing now.
+          final int notifId = id.hashCode;
+          if (!alreadyScheduled.contains(notifId)) {
+            final DateTime reminderTime = DateTime(
+              c.dueDate.year,
+              c.dueDate.month,
+              c.dueDate.day - prefs.daysBefore,
+              9,
+            );
+            await _notificationService.scheduleAt(
+              id: notifId,
+              title: 'Due soon',
+              body: 'An item is due back on ${c.dueDate.month}/${c.dueDate.day}.',
+              scheduledTime: reminderTime,
+            );
+          }
         }
       }
 
       for (final h in holds) {
-        if (h.isReadyForPickup) {
+        if (h.isReadyForPickup && prefs.holdReadyAlerts) {
           final id = 'holdready-${h.holdId}';
           if (dismissedIds.contains(id)) continue;
           synthesized.add(NotificationItem(
@@ -87,21 +122,24 @@ class NotificationsCubit extends Cubit<NotificationsState> {
             isRead: readIds.contains(id),
             relatedBiblioId: h.biblioId,
           ));
+          await _fireOnce(id, 'Hold ready', 'A held title is ready for pickup at COMSATS Main Library.');
         }
       }
 
       final List<SavedSearch> savedSearches = await _loadSavedSearchesFromHive();
-      for (final s in savedSearches.where((s) => s.alertsEnabled && s.resultCount > 0)) {
-        final id = 'savedsearch-${s.id}';
-        if (dismissedIds.contains(id)) continue;
-        synthesized.add(NotificationItem(
-          id: id,
-          type: NotificationType.savedSearch,
-          title: 'New titles match your search',
-          body: '${s.resultCount} titles match "${s.term}"',
-          createdAt: s.lastCheckedAt,
-          isRead: readIds.contains(id),
-        ));
+      if (prefs.savedSearchArrivals) {
+        for (final s in savedSearches.where((s) => s.alertsEnabled && s.resultCount > 0)) {
+          final id = 'savedsearch-${s.id}';
+          if (dismissedIds.contains(id)) continue;
+          synthesized.add(NotificationItem(
+            id: id,
+            type: NotificationType.savedSearch,
+            title: 'New titles match your search',
+            body: '${s.resultCount} titles match "${s.term}"',
+            createdAt: s.lastCheckedAt,
+            isRead: readIds.contains(id),
+          ));
+        }
       }
 
       synthesized.sort((a, b) => b.createdAt.compareTo(a.createdAt));
@@ -114,6 +152,18 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     } on LibraryException catch (e) {
       emit(state.copyWith(status: NotificationsStatus.error, errorMessage: e.message));
     }
+  }
+
+  /// Fires a real device notification for [id] at most once per app
+  /// session, so re-visiting the Notifications tab doesn't re-alert
+  /// for the same overdue/hold-ready item repeatedly. Only used for
+  /// states that are already true "now" (overdue, hold ready) — see
+  /// class doc for why due-soon uses [NotificationService.scheduleAt]
+  /// instead.
+  Future<void> _fireOnce(String id, String title, String body) async {
+    if (_firedThisSession.contains(id)) return;
+    _firedThisSession.add(id);
+    await _notificationService.showNow(id: id.hashCode, title: title, body: body);
   }
 
   void setFilter(NotificationFilter filter) {
@@ -135,6 +185,8 @@ class NotificationsCubit extends Cubit<NotificationsState> {
     final Set<String> dismissedIds =
     ((box.get(_dismissedIdsKey) as List?)?.cast<String>() ?? []).toSet()..add(id);
     await box.put(_dismissedIdsKey, dismissedIds.toList());
+
+    await _notificationService.cancel(id.hashCode);
 
     emit(state.copyWith(
       notifications: state.notifications.where((n) => n.id != id).toList(),

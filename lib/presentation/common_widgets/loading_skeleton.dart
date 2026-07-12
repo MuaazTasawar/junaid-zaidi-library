@@ -4,7 +4,7 @@ import 'package:shimmer/shimmer.dart';
 import '../../core/theme/app_colors.dart';
 
 /// Shimmer-based loading skeletons (Screen 27). Every screen must
-/// show one of these while its Cubit is in a loading state — never a
+/// show one of these while its Cubit is in a loading state â€” never a
 /// bare [CircularProgressIndicator] (Golden Rule #5).
 class LoadingSkeleton {
   const LoadingSkeleton._();
@@ -19,12 +19,16 @@ class LoadingSkeleton {
           const SizedBox(height: 20),
           SizedBox(
             height: 140,
-            child: Row(
-              children: List.generate(
-                3,
-                    (i) => Padding(
-                  padding: const EdgeInsets.only(right: 12),
-                  child: _block(width: 100, height: 140),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              physics: const NeverScrollableScrollPhysics(),
+              child: Row(
+                children: List.generate(
+                  3,
+                      (i) => Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: _block(width: 100, height: 140),
+                  ),
                 ),
               ),
             ),

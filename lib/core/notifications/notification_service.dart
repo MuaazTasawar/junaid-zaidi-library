@@ -5,11 +5,16 @@ import 'package:timezone/timezone.dart' as tz;
 /// in `service_locator.dart` and used by [NotificationsCubit] to fire
 /// real local notifications.
 ///
-/// As of Phase 16, this supports true background-time delivery via
-/// [scheduleAt] (`zonedSchedule`), in addition to the immediate
-/// [showNow]. See `main.dart`'s note on timezone detection: exact
-/// times are computed against `tz.local`, which defaults to UTC since
-/// no device-timezone-detection package is declared.
+/// Supports both immediate delivery ([showNow]) and true
+/// background-time delivery via [scheduleAt] (`zonedSchedule`). Exact
+/// times are computed against `tz.local`, which `main.dart` sets from
+/// the device's real IANA timezone via `flutter_timezone` (falling
+/// back to UTC if detection fails).
+///
+/// Uses the fully-named-argument API — the installed
+/// flutter_local_notifications version requires `settings:`,
+/// `id:`, `notificationDetails:`, `scheduledDate:`, etc. as named
+/// parameters rather than positional ones.
 class NotificationService {
   NotificationService() : _plugin = FlutterLocalNotificationsPlugin();
 
@@ -36,7 +41,7 @@ class NotificationService {
       iOS: iosSettings,
     );
 
-    await _plugin.initialize(settings);
+    await _plugin.initialize(settings: settings);
 
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       _channelId,
@@ -51,6 +56,10 @@ class NotificationService {
     _initialized = true;
   }
 
+  /// Fires a notification immediately. Used for states that are
+  /// already true right now (overdue, hold ready) — see
+  /// [NotificationsCubit] for why "due soon" uses [scheduleAt]
+  /// instead of this.
   Future<void> showNow({
     required int id,
     required String title,
@@ -70,14 +79,19 @@ class NotificationService {
       iOS: DarwinNotificationDetails(),
     );
 
-    await _plugin.show(id, title, body, details);
+    await _plugin.show(
+      id: id,
+      title: title,
+      body: body,
+      notificationDetails: details,
+    );
   }
 
   /// Schedules a notification for a real future device time — fires
   /// even if the app is closed, unlike [showNow]. If [scheduledTime]
-  /// is already in the past, this falls back to firing immediately
-  /// (e.g. a due-date reminder computed for "3 days before" a due
-  /// date that's already overdue).
+  /// is already in the past, this falls back to firing 2 seconds from
+  /// now rather than silently dropping it (e.g. a due-date reminder
+  /// computed for "3 days before" a due date that's already overdue).
   Future<void> scheduleAt({
     required int id,
     required String title,
@@ -105,18 +119,16 @@ class NotificationService {
     );
 
     await _plugin.zonedSchedule(
-      id,
-      title,
-      body,
-      target,
-      details,
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: target,
+      notificationDetails: details,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-      UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 
-  Future<void> cancel(int id) => _plugin.cancel(id);
+  Future<void> cancel(int id) => _plugin.cancel(id: id);
 
   Future<void> cancelAll() => _plugin.cancelAll();
 

@@ -62,6 +62,7 @@ class MockLibraryRepository implements LibraryRepository {
 
   // ── Auth ──────────────────────────────
 
+  // ── Patron ──────────────────────────────
   @override
   Future<Patron> login({
     required String cardnumber,
@@ -84,8 +85,12 @@ class MockLibraryRepository implements LibraryRepository {
     return matches.first;
   }
 
-  // ── Patron ──────────────────────────────
-
+  @override
+  Future<void> logout() async {
+    // No session state to clear in the mock — kept as a real async
+    // no-op (not omitted) so the interface is satisfied identically
+    // to KohaLibraryRepository's version.
+  }
   @override
   Future<Patron> getPatron(int patronId) async {
     await _simulateLatency();

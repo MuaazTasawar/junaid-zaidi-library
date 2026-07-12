@@ -72,6 +72,12 @@ class AuthCubit extends Cubit<AuthState> {
   }
 
   Future<void> logout() async {
+    // Clears repository-side session state too now — matters for
+    // KohaLibraryRepository, where this drops the stored Basic Auth
+    // credentials and cached staff OAuth token; harmless no-op for
+    // MockLibraryRepository.
+    await _repository.logout();
+
     final Box box = await Hive.openBox(_boxName);
     await box.delete(_patronIdKey);
 

@@ -1,6 +1,9 @@
 import 'package:get_it/get_it.dart';
+import 'package:http/http.dart' as http;
 
 import '../../data/local/offline_queue_store.dart';
+import '../../data/network/koha_api_client.dart';
+import '../../data/repositories/koha_library_repository.dart';
 import '../../data/repositories/library_repository.dart';
 import '../../data/repositories/mock_library_repository.dart';
 import '../../presentation/account/account_cubit.dart';
@@ -16,10 +19,18 @@ import '../notifications/notification_service.dart';
 
 final GetIt sl = GetIt.instance;
 
-/// Global mock/real switch. Flip to `false` only once a real
-/// `KohaLibraryRepository` implementation exists and is registered
-/// below — no other code in the app needs to change when that
-/// happens (that's the whole point of the repository contract).
+/// Global mock/real switch.
+///
+/// Flip to `false` only after:
+///   1. Filling in `AppConstants.kohaBaseUrl` (and staff OAuth client
+///      ID/secret if staff features will be used against the real
+///      server).
+///   2. Reading the Phase 17 notes on `login()`'s endpoint likely
+///      needing adjustment for your specific Koha instance's auth
+///      configuration, and `getAccount()`'s response-shape handling.
+///
+/// No other code in the app needs to change when you do this — that's
+/// the whole point of the repository contract.
 ///
 /// Also read directly by `SettingsScreen` (Phase 12) to show an
 /// honest "mock data" vs "connected" status instead of a fabricated
@@ -31,8 +42,12 @@ Future<void> setupServiceLocator() async {
   if (useMock) {
     sl.registerLazySingleton<LibraryRepository>(() => MockLibraryRepository());
   } else {
-    throw UnsupportedError(
-      'KohaLibraryRepository is not implemented yet. Set useMock = true in service_locator.dart.',
+    sl.registerLazySingleton<http.Client>(() => http.Client());
+    sl.registerLazySingleton<KohaApiClient>(
+          () => KohaApiClient(httpClient: sl<http.Client>()),
+    );
+    sl.registerLazySingleton<LibraryRepository>(
+          () => KohaLibraryRepository(sl<KohaApiClient>()),
     );
   }
 
