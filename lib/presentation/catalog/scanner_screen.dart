@@ -13,9 +13,14 @@ import 'catalog_state.dart';
 
 /// Screen 9: barcode scanner — live camera viewfinder with animated
 /// corner brackets + scan line, torch toggle, manual entry fallback,
-/// and a "last scanned" result card. Patron-facing here ("Search
-/// catalog" CTA); the near-identical staff checkout/checkin variants
-/// with staff-only actions are built in Phase 14.
+/// and a "last scanned" result card.
+///
+/// The corner brackets and animated scan line are purely decorative
+/// (Phase 18: wrapped in [ExcludeSemantics]) — a screen reader has no
+/// use for "four L-shaped graphics" or a line that moves 60 times a
+/// second. What matters is announced instead: the viewfinder region
+/// has a semantic label explaining its purpose, and scan results are
+/// a live region so success/failure is spoken automatically.
 class ScannerScreen extends StatefulWidget {
   const ScannerScreen({super.key});
 
@@ -73,12 +78,17 @@ class _ScannerScreenState extends State<ScannerScreen>
           foregroundColor: Colors.white,
           title: const Text('Scan barcode'),
           actions: [
-            IconButton(
-              icon: Icon(_torchOn ? Icons.flash_on_rounded : Icons.flash_off_rounded),
-              onPressed: () {
-                _cameraController.toggleTorch();
-                setState(() => _torchOn = !_torchOn);
-              },
+            Semantics(
+              button: true,
+              label: _torchOn ? 'Turn off flashlight' : 'Turn on flashlight',
+              excludeSemantics: true,
+              child: IconButton(
+                icon: Icon(_torchOn ? Icons.flash_on_rounded : Icons.flash_off_rounded),
+                onPressed: () {
+                  _cameraController.toggleTorch();
+                  setState(() => _torchOn = !_torchOn);
+                },
+              ),
             ),
           ],
         ),
@@ -87,47 +97,57 @@ class _ScannerScreenState extends State<ScannerScreen>
             children: [
               SizedBox(
                 height: 260,
-                child: Stack(
-                  children: [
-                    MobileScanner(controller: _cameraController, onDetect: _onDetect),
-                    Positioned.fill(
-                      child: Center(
-                        child: SizedBox(
-                          width: 220,
-                          height: 160,
-                          child: Stack(
-                            children: [
-                              const _CornerBracket(alignment: Alignment.topLeft),
-                              const _CornerBracket(alignment: Alignment.topRight),
-                              const _CornerBracket(alignment: Alignment.bottomLeft),
-                              const _CornerBracket(alignment: Alignment.bottomRight),
-                              AnimatedBuilder(
-                                animation: _scanLineController,
-                                builder: (context, child) {
-                                  return Positioned(
-                                    top: 160 * _scanLineController.value,
-                                    left: 0,
-                                    right: 0,
-                                    child: Container(height: 2, color: const Color(0xFF2F5233)),
-                                  );
-                                },
+                child: Semantics(
+                  label: 'Camera viewfinder. Align a barcode within the frame to scan, '
+                      'or use manual entry below.',
+                  child: Stack(
+                    children: [
+                      ExcludeSemantics(
+                        child: MobileScanner(controller: _cameraController, onDetect: _onDetect),
+                      ),
+                      ExcludeSemantics(
+                        child: Positioned.fill(
+                          child: Center(
+                            child: SizedBox(
+                              width: 220,
+                              height: 160,
+                              child: Stack(
+                                children: [
+                                  const _CornerBracket(alignment: Alignment.topLeft),
+                                  const _CornerBracket(alignment: Alignment.topRight),
+                                  const _CornerBracket(alignment: Alignment.bottomLeft),
+                                  const _CornerBracket(alignment: Alignment.bottomRight),
+                                  AnimatedBuilder(
+                                    animation: _scanLineController,
+                                    builder: (context, child) {
+                                      return Positioned(
+                                        top: 160 * _scanLineController.value,
+                                        left: 0,
+                                        right: 0,
+                                        child: Container(height: 2, color: const Color(0xFF2F5233)),
+                                      );
+                                    },
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const Positioned(
-                      bottom: 12,
-                      left: 0,
-                      right: 0,
-                      child: Text(
-                        'Align barcode within frame',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white70, fontSize: 12),
+                      const Positioned(
+                        bottom: 12,
+                        left: 0,
+                        right: 0,
+                        child: ExcludeSemantics(
+                          child: Text(
+                            'Align barcode within frame',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.white70, fontSize: 12),
+                          ),
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               Padding(
@@ -141,9 +161,14 @@ class _ScannerScreenState extends State<ScannerScreen>
                     hintStyle: const TextStyle(color: Colors.white54),
                     filled: true,
                     fillColor: Colors.white12,
-                    suffixIcon: IconButton(
-                      icon: const Icon(Icons.arrow_forward_rounded, color: Colors.white),
-                      onPressed: _submitManual,
+                    suffixIcon: Semantics(
+                      button: true,
+                      label: 'Submit barcode',
+                      excludeSemantics: true,
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_forward_rounded, color: Colors.white),
+                        onPressed: _submitManual,
+                      ),
                     ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -159,21 +184,27 @@ class _ScannerScreenState extends State<ScannerScreen>
                       return const Center(child: CircularProgressIndicator());
                     }
                     if (state.scanStatus == ScanStatus.notFound) {
-                      return const Center(
-                        child: Text('No item found for that barcode',
-                            style: TextStyle(color: Colors.white70)),
+                      return Semantics(
+                        liveRegion: true,
+                        child: const Center(
+                          child: Text('No item found for that barcode',
+                              style: TextStyle(color: Colors.white70)),
+                        ),
                       );
                     }
                     if (state.scanStatus == ScanStatus.found &&
                         state.scannedItem != null &&
                         state.scannedBiblio != null) {
-                      return _LastScannedCard(
-                        title: state.scannedBiblio!.title,
-                        author: state.scannedBiblio!.author,
-                        subject: state.scannedBiblio!.subject,
-                        barcode: state.scannedItem!.itemnumber.toString(),
-                        onSearchCatalog: () => context
-                            .push(AppRoutes.bookDetailPath(state.scannedBiblio!.biblioId)),
+                      return Semantics(
+                        liveRegion: true,
+                        child: _LastScannedCard(
+                          title: state.scannedBiblio!.title,
+                          author: state.scannedBiblio!.author,
+                          subject: state.scannedBiblio!.subject,
+                          barcode: state.scannedItem!.itemnumber.toString(),
+                          onSearchCatalog: () => context
+                              .push(AppRoutes.bookDetailPath(state.scannedBiblio!.biblioId)),
+                        ),
                       );
                     }
                     return const SizedBox.shrink();

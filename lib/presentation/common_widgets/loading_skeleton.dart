@@ -4,24 +4,28 @@ import 'package:shimmer/shimmer.dart';
 import '../../core/theme/app_colors.dart';
 
 /// Shimmer-based loading skeletons (Screen 27). Every screen must
-/// show one of these while its Cubit is in a loading state â€” never a
+/// show one of these while its Cubit is in a loading state — never a
 /// bare [CircularProgressIndicator] (Golden Rule #5).
+///
+/// Each variant is wrapped in a [Semantics] live region announcing
+/// "Loading" (Phase 18) — previously a screen reader encountered a
+/// grid of unlabeled shimmer boxes with no indication that content
+/// was on its way, rather than silence being interpreted as "nothing
+/// here."
 class LoadingSkeleton {
   const LoadingSkeleton._();
 
-  static Widget home(BuildContext context) => _ShimmerWrap(
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _bar(width: 180, height: 20),
-          const SizedBox(height: 20),
-          SizedBox(
-            height: 140,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              physics: const NeverScrollableScrollPhysics(),
+  static Widget home(BuildContext context) => _liveLoadingRegion(
+    child: _ShimmerWrap(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _bar(width: 180, height: 20),
+            const SizedBox(height: 20),
+            SizedBox(
+              height: 140,
               child: Row(
                 children: List.generate(
                   3,
@@ -32,93 +36,107 @@ class LoadingSkeleton {
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 20),
-          _bar(width: 140, height: 16),
-          const SizedBox(height: 12),
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 3,
-            mainAxisSpacing: 12,
-            crossAxisSpacing: 12,
-            children: List.generate(6, (i) => _block(height: 64)),
-          ),
-        ],
-      ),
-    ),
-  );
-
-  static Widget list({int rows = 5}) => _ShimmerWrap(
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: List.generate(
-          rows,
-              (i) => Padding(
-            padding: const EdgeInsets.only(bottom: 14),
-            child: Row(
-              children: [
-                _block(width: 40, height: 56),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _bar(width: double.infinity, height: 14),
-                      const SizedBox(height: 8),
-                      _bar(width: 120, height: 12),
-                    ],
-                  ),
-                ),
-              ],
+            const SizedBox(height: 20),
+            _bar(width: 140, height: 16),
+            const SizedBox(height: 12),
+            GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 3,
+              mainAxisSpacing: 12,
+              crossAxisSpacing: 12,
+              children: List.generate(6, (i) => _block(height: 64)),
             ),
-          ),
+          ],
         ),
       ),
     ),
   );
 
-  static Widget cards({int count = 3}) => _ShimmerWrap(
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: List.generate(
-          count,
-              (i) => Padding(
-            padding: const EdgeInsets.only(bottom: 14),
-            child: _block(height: 90),
-          ),
-        ),
-      ),
-    ),
-  );
-
-  static Widget profile(BuildContext context) => _ShimmerWrap(
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          _circle(size: 72),
-          const SizedBox(height: 16),
-          _bar(width: 140, height: 16),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(3, (i) => _block(width: 90, height: 60)),
-          ),
-          const SizedBox(height: 24),
-          ...List.generate(
-            4,
+  static Widget list({int rows = 5}) => _liveLoadingRegion(
+    child: _ShimmerWrap(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: List.generate(
+            rows,
                 (i) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _bar(width: double.infinity, height: 44),
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Row(
+                children: [
+                  _block(width: 40, height: 56),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _bar(width: double.infinity, height: 14),
+                        const SizedBox(height: 8),
+                        _bar(width: 120, height: 12),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ],
+        ),
       ),
     ),
   );
+
+  static Widget cards({int count = 3}) => _liveLoadingRegion(
+    child: _ShimmerWrap(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: List.generate(
+            count,
+                (i) => Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: _block(height: 90),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  static Widget profile(BuildContext context) => _liveLoadingRegion(
+    child: _ShimmerWrap(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            _circle(size: 72),
+            const SizedBox(height: 16),
+            _bar(width: 140, height: 16),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: List.generate(3, (i) => _block(width: 90, height: 60)),
+            ),
+            const SizedBox(height: 24),
+            ...List.generate(
+              4,
+                  (i) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: _bar(width: double.infinity, height: 44),
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+
+  static Widget _liveLoadingRegion({required Widget child}) {
+    return Semantics(
+      label: 'Loading',
+      liveRegion: true,
+      child: ExcludeSemantics(child: child),
+    );
+  }
 
   static Widget _bar({double width = double.infinity, required double height}) {
     return Container(

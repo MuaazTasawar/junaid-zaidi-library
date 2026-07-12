@@ -46,10 +46,10 @@ class _StaffScanCheckoutScreenState extends State<StaffScanCheckoutScreen>
   }
 
   void _handleDetect(
-    BarcodeCapture capture,
-    StaffCubit cubit,
-    StaffState state,
-  ) {
+      BarcodeCapture capture,
+      StaffCubit cubit,
+      StaffState state,
+      ) {
     final String? code = capture.barcodes.isNotEmpty
         ? capture.barcodes.first.rawValue
         : null;
@@ -125,59 +125,76 @@ class _StaffScanCheckoutScreenState extends State<StaffScanCheckoutScreen>
                   ),
                   SizedBox(
                     height: 220,
-                    child: Stack(
-                      children: [
-                        MobileScanner(
-                          controller: _cameraController,
-                          onDetect: (capture) =>
-                              _handleDetect(capture, cubit, state),
-                        ),
-                        Positioned.fill(
-                          child: Center(
-                            child: SizedBox(
-                              width: 200,
-                              height: 140,
-                              child: Stack(
-                                children: [
-                                  const _Bracket(alignment: Alignment.topLeft),
-                                  const _Bracket(alignment: Alignment.topRight),
-                                  const _Bracket(
-                                    alignment: Alignment.bottomLeft,
-                                  ),
-                                  const _Bracket(
-                                    alignment: Alignment.bottomRight,
-                                  ),
-                                  AnimatedBuilder(
-                                    animation: _scanLineController,
-                                    builder: (context, child) => Positioned(
-                                      top: 140 * _scanLineController.value,
-                                      left: 0,
-                                      right: 0,
-                                      child: Container(
-                                        height: 2,
-                                        color: const Color(0xFF2F5233),
+                    child: Semantics(
+                      label: step2
+                          ? 'Camera viewfinder. Align the item barcode within the frame.'
+                          : 'Camera viewfinder. Align the patron card barcode within the frame.',
+                      child: Stack(
+                        children: [
+                          ExcludeSemantics(
+                            child: MobileScanner(
+                              controller: _cameraController,
+                              onDetect: (capture) =>
+                                  _handleDetect(capture, cubit, state),
+                            ),
+                          ),
+                          ExcludeSemantics(
+                            child: Positioned.fill(
+                              child: Center(
+                                child: SizedBox(
+                                  width: 200,
+                                  height: 140,
+                                  child: Stack(
+                                    children: [
+                                      const _Bracket(
+                                        alignment: Alignment.topLeft,
                                       ),
-                                    ),
+                                      const _Bracket(
+                                        alignment: Alignment.topRight,
+                                      ),
+                                      const _Bracket(
+                                        alignment: Alignment.bottomLeft,
+                                      ),
+                                      const _Bracket(
+                                        alignment: Alignment.bottomRight,
+                                      ),
+                                      AnimatedBuilder(
+                                        animation: _scanLineController,
+                                        builder: (context, child) =>
+                                            Positioned(
+                                              top:
+                                              140 * _scanLineController.value,
+                                              left: 0,
+                                              right: 0,
+                                              child: Container(
+                                                height: 2,
+                                                color: const Color(0xFF2F5233),
+                                              ),
+                                            ),
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        const Positioned(
-                          bottom: 8,
-                          left: 0,
-                          right: 0,
-                          child: Text(
-                            'Align barcode within frame',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
+                          const Positioned(
+                            bottom: 8,
+                            left: 0,
+                            right: 0,
+                            child: ExcludeSemantics(
+                              child: Text(
+                                'Align barcode within frame',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                   Padding(
@@ -209,13 +226,16 @@ class _StaffScanCheckoutScreenState extends State<StaffScanCheckoutScreen>
                     ),
                   ),
                   if (state.checkoutError != null)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        state.checkoutError!,
-                        style: const TextStyle(
-                          color: Colors.redAccent,
-                          fontSize: 12,
+                    Semantics(
+                      liveRegion: true,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          state.checkoutError!,
+                          style: const TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                     ),
@@ -225,50 +245,58 @@ class _StaffScanCheckoutScreenState extends State<StaffScanCheckoutScreen>
                       child: Column(
                         children: [
                           if (state.scannedPatron != null)
-                            _InfoCard(
-                              title: state.scannedPatron!.fullName,
-                              subtitle:
-                                  '${state.scannedPatron!.cardnumber} · ${state.scannedPatronCheckoutCount} active checkouts',
+                            Semantics(
+                              liveRegion: true,
+                              child: _InfoCard(
+                                title: state.scannedPatron!.fullName,
+                                subtitle:
+                                '${state.scannedPatron!.cardnumber} · ${state.scannedPatronCheckoutCount} active checkouts',
+                              ),
                             ),
                           if (state.checkoutScannedItem != null &&
                               state.checkoutScannedBiblio != null) ...[
                             const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                BookCover(
-                                  title: state.checkoutScannedBiblio!.title,
-                                  author: state.checkoutScannedBiblio!.author,
-                                  subject: state.checkoutScannedBiblio!.subject,
-                                  width: 44,
-                                  height: 62,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        state.checkoutScannedBiblio!.title,
-                                        style: AppTypography.lora(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                      Text(
-                                        state
-                                            .checkoutScannedItem!
-                                            .itemcallnumber,
-                                        style: AppTypography.mono(
-                                          fontSize: 11,
-                                          color: Colors.white70,
-                                        ),
-                                      ),
-                                    ],
+                            Semantics(
+                              liveRegion: true,
+                              child: Row(
+                                children: [
+                                  BookCover(
+                                    title: state.checkoutScannedBiblio!.title,
+                                    author:
+                                    state.checkoutScannedBiblio!.author,
+                                    subject:
+                                    state.checkoutScannedBiblio!.subject,
+                                    width: 44,
+                                    height: 62,
                                   ),
-                                ),
-                              ],
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          state.checkoutScannedBiblio!.title,
+                                          style: AppTypography.lora(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.white,
+                                          ),
+                                        ),
+                                        Text(
+                                          state
+                                              .checkoutScannedItem!
+                                              .itemcallnumber,
+                                          style: AppTypography.mono(
+                                            fontSize: 11,
+                                            color: Colors.white70,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ],
                           const SizedBox(height: 20),

@@ -53,23 +53,35 @@ class LibraryCardScreen extends StatelessWidget {
                 Text(patron.cardnumber,
                     style: AppTypography.mono(fontSize: 18, fontWeight: FontWeight.w600)),
                 const SizedBox(height: 24),
-                Container(
-                  width: 100,
-                  height: 100,
-                  color: ext.inkText,
-                  child: GridView.builder(
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate:
-                    const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 8),
-                    itemCount: 64,
-                    itemBuilder: (context, index) => Container(
-                      margin: const EdgeInsets.all(1),
-                      color: (index * 7) % 3 == 0 ? ext.background : ext.inkText,
+                Semantics(
+                  label: 'QR code placeholder for library card barcode scanning '
+                      '(visual representation only — not a functional scan target).',
+                  child: ExcludeSemantics(
+                    child: Container(
+                      width: 100,
+                      height: 100,
+                      color: ext.inkText,
+                      child: GridView.builder(
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate:
+                        const SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 8),
+                        itemCount: 64,
+                        itemBuilder: (context, index) => Container(
+                          margin: const EdgeInsets.all(1),
+                          color: (index * 7) % 3 == 0 ? ext.background : ext.inkText,
+                        ),
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 12),
-                Container(height: 40, color: ext.inkText, width: double.infinity),
+                Semantics(
+                  label: 'Barcode placeholder for card number ${patron.cardnumber} '
+                      '(visual representation only — not a functional scan target).',
+                  child: ExcludeSemantics(
+                    child: Container(height: 40, color: ext.inkText, width: double.infinity),
+                  ),
+                ),
                 const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,

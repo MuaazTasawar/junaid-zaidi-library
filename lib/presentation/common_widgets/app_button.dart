@@ -7,6 +7,11 @@ enum AppButtonVariant { primary, outlined, text, destructive }
 /// Standard full-width-capable button used across LibConnect.
 /// Wraps Flutter's themed buttons so every screen gets consistent
 /// sizing, loading state, and disabled state without repeating logic.
+///
+/// Wrapped in [Semantics] (Phase 18) with `enabled` reflecting real
+/// interactivity and a `busy` flag while [isLoading] is true — a
+/// spinner replacing the label previously left a screen reader
+/// announcing nothing while a request was in flight.
 class AppButton extends StatelessWidget {
   const AppButton({
     super.key,
@@ -78,6 +83,16 @@ class AppButton extends StatelessWidget {
       ),
     };
 
-    return fullWidth ? SizedBox(width: double.infinity, child: button) : button;
+    final Widget semanticButton = Semantics(
+      button: true,
+      enabled: !disabled,
+      label: isLoading ? '$label, loading' : label,
+      excludeSemantics: true,
+      child: button,
+    );
+
+    return fullWidth
+        ? SizedBox(width: double.infinity, child: semanticButton)
+        : semanticButton;
   }
 }
